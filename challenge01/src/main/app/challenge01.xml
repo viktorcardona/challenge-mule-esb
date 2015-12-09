@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns:s3="http://www.mulesoft.org/schema/mule/s3" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd">
+    <mongo:config name="Mongo_DB" database="test" doc:name="Mongo DB" password="12345" username="reports"/>
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <s3:config name="Amazon_S3__Configuration" accessKey="AKIAITHHT6X7FLQAUFMQ" secretKey="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" doc:name="Amazon S3: Configuration"/>
+    <http:request-config name="HTTP_Request_Configuration" host="localhost" port="8080" basePath="/docquery-0.1.0/document" doc:name="HTTP Request Configuration"/>
+    <flow name="getXMLFileAndStore">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/getXml" allowedMethods="GET" doc:name="HTTP"/>
+        <set-variable variableName="fileName" value="#[message.inboundProperties.'http.query.params'.fileName]" doc:name="Variable"/>
+        <s3:get-object-content config-ref="Amazon_S3__Configuration" bucketName="s3-helios-dev-prodigiousintegration" key="#['challenge/'+flowVars.fileName]" doc:name="Amazon S3"/>
+        <byte-array-to-string-transformer doc:name="Byte Array to String"/>
+        <json:xml-to-json-transformer doc:name="XML to JSON"/>
+        <json:json-to-object-transformer returnClass="challenge01.json.object.Log4j2" doc:name="JSON to Object"/>
+        <custom-transformer class="challenge01.json.transformer.ObjectTransformer" doc:name="Set Name Key">
+            <spring:property name="fileName" value="log4j2.xml"/>
+        </custom-transformer>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <mongo:insert-object config-ref="Mongo_DB" collection="myCollectionTest" doc:name="Mongo DB"/>
+        <logger message="#[flowVars.fileName+':::Payload in the getXMLFileAndStore::: '+payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="findDocument">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/findXML" allowedMethods="GET" doc:name="HTTP"/>
+        <set-variable variableName="fileName" value="#[message.inboundProperties.'http.query.params'.fileName]" doc:name="Set File Name"/>
+        <http:request config-ref="HTTP_Request_Configuration" path="?fileName={fileName}" method="GET" doc:name="HTTP">
+            <http:request-builder>
+                <http:uri-param paramName="fileName" value="#[flowVars.fileName]"/>
+            </http:request-builder>
+        </http:request>
+    </flow>
+</mule>
