@@ -24,8 +24,7 @@ http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/
         <byte-array-to-string-transformer doc:name="Byte Array to String"/>
         <json:xml-to-json-transformer doc:name="XML to JSON"/>
         <json:json-to-object-transformer returnClass="challenge01.json.object.Log4j2" doc:name="JSON to Object"/>
-        <custom-transformer class="challenge01.json.transformer.ObjectTransformer" doc:name="Set Name Key">
-            <spring:property name="fileName" value="log4j2.xml"/>
+        <custom-transformer class="challenge01.json.transformer.Log4JTransformer" doc:name="Set Name Key">
         </custom-transformer>
         <json:object-to-json-transformer doc:name="Object to JSON"/>
         <mongo:insert-object config-ref="Mongo_DB" collection="myCollectionTest" doc:name="Mongo DB"/>
