@@ -22,7 +22,11 @@ public class DocumentController {
 
         String jsonDoc = mongoQuery.getDocumentByFileName(collectionName,fileName);
 
-        return (jsonDoc!=null && !jsonDoc.isEmpty())?jsonDoc:"{Document does not exist}";
+        if(jsonDoc!=null && !jsonDoc.isEmpty()){
+            return jsonDoc;
+        }
+
+        return "{Document does not exist}";
     }
 
 }
